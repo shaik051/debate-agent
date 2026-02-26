@@ -32,7 +32,7 @@ ANTHROPIC_API_KEY=sk-ant-...
 
 ## Usage
 
-### Web UI (best for demos)
+### Web UI
 
 ```bash
 npx tsx src/server.ts
