@@ -1,0 +1,440 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Debate Agent</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    :root {
+      --bg: #0f0f13;
+      --surface: #1a1a24;
+      --border: #2a2a3a;
+      --text: #e4e4ef;
+      --text-dim: #8888a0;
+      --green: #34d399;
+      --green-bg: rgba(52, 211, 153, 0.08);
+      --green-border: rgba(52, 211, 153, 0.25);
+      --red: #f87171;
+      --red-bg: rgba(248, 113, 113, 0.08);
+      --red-border: rgba(248, 113, 113, 0.25);
+      --yellow: #fbbf24;
+      --yellow-bg: rgba(251, 191, 36, 0.08);
+      --yellow-border: rgba(251, 191, 36, 0.25);
+      --accent: #818cf8;
+      --accent-bg: rgba(129, 140, 248, 0.1);
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    header {
+      text-align: center;
+      padding: 2rem 1.5rem 1rem;
+      border-bottom: 1px solid var(--border);
+    }
+
+    header h1 {
+      font-size: 1.8rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+    }
+
+    header p {
+      color: var(--text-dim);
+      font-size: 0.95rem;
+      margin-top: 0.25rem;
+    }
+
+    .start-screen {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 2rem;
+      gap: 2rem;
+    }
+
+    .examples {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      justify-content: center;
+      max-width: 650px;
+    }
+
+    .example-chip {
+      padding: 0.6rem 1.1rem;
+      border-radius: 99px;
+      border: 1px solid var(--border);
+      background: var(--surface);
+      color: var(--text-dim);
+      font-size: 0.9rem;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .example-chip:hover {
+      border-color: var(--accent);
+      color: var(--text);
+      background: var(--accent-bg);
+    }
+
+    .input-row {
+      display: flex;
+      gap: 0.6rem;
+      width: 100%;
+      max-width: 650px;
+    }
+
+    .input-row input {
+      flex: 1;
+      padding: 0.85rem 1.2rem;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      background: var(--surface);
+      color: var(--text);
+      font-size: 1rem;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    .input-row input:focus { border-color: var(--accent); }
+    .input-row input::placeholder { color: var(--text-dim); }
+
+    .input-row select {
+      padding: 0.85rem 0.8rem;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      background: var(--surface);
+      color: var(--text);
+      font-size: 0.9rem;
+      cursor: pointer;
+      outline: none;
+    }
+
+    .btn {
+      padding: 0.85rem 1.8rem;
+      border-radius: 12px;
+      border: none;
+      background: var(--accent);
+      color: white;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: opacity 0.2s, transform 0.1s;
+      white-space: nowrap;
+    }
+
+    .btn:hover { opacity: 0.9; }
+    .btn:active { transform: scale(0.98); }
+    .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    /* Chat area */
+    .chat-screen { display: none; flex-direction: column; flex: 1; }
+    .chat-screen.active { display: flex; }
+
+    .topic-bar {
+      padding: 0.75rem 1.5rem;
+      text-align: center;
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      font-weight: 600;
+      color: var(--accent);
+    }
+
+    .chat-feed {
+      flex: 1;
+      overflow-y: auto;
+      padding: 1.5rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+      max-width: 750px;
+      width: 100%;
+      margin: 0 auto;
+    }
+
+    .msg {
+      max-width: 80%;
+      padding: 0.85rem 1.15rem;
+      border-radius: 16px;
+      font-size: 0.95rem;
+      line-height: 1.55;
+      animation: slideIn 0.3s ease;
+      white-space: pre-wrap;
+    }
+
+    @keyframes slideIn {
+      from { opacity: 0; transform: translateY(12px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .msg.pro {
+      align-self: flex-start;
+      background: var(--green-bg);
+      border: 1px solid var(--green-border);
+      border-bottom-left-radius: 4px;
+    }
+
+    .msg.con {
+      align-self: flex-end;
+      background: var(--red-bg);
+      border: 1px solid var(--red-border);
+      border-bottom-right-radius: 4px;
+    }
+
+    .msg-label {
+      font-size: 0.7rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      margin-bottom: 0.35rem;
+    }
+
+    .msg.pro .msg-label { color: var(--green); }
+    .msg.con .msg-label { color: var(--red); }
+
+    .typing-indicator {
+      padding: 0.75rem 1.5rem;
+      text-align: center;
+      color: var(--text-dim);
+      font-size: 0.9rem;
+      min-height: 2.5rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+    }
+
+    .dot-pulse {
+      display: inline-flex;
+      gap: 4px;
+    }
+
+    .dot-pulse span {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--text-dim);
+      animation: pulse 1.2s ease-in-out infinite;
+    }
+
+    .dot-pulse span:nth-child(2) { animation-delay: 0.15s; }
+    .dot-pulse span:nth-child(3) { animation-delay: 0.3s; }
+
+    @keyframes pulse {
+      0%, 80%, 100% { opacity: 0.3; transform: scale(0.8); }
+      40% { opacity: 1; transform: scale(1); }
+    }
+
+    .verdict-msg {
+      background: var(--yellow-bg);
+      border: 1px solid var(--yellow-border);
+      border-radius: 16px;
+      padding: 1.2rem 1.4rem;
+      font-size: 0.95rem;
+      line-height: 1.6;
+      animation: slideIn 0.4s ease;
+      align-self: center;
+      max-width: 90%;
+      white-space: pre-wrap;
+    }
+
+    .verdict-msg .msg-label { color: var(--yellow); }
+
+    .bottom-bar {
+      padding: 1rem 1.5rem;
+      border-top: 1px solid var(--border);
+      text-align: center;
+    }
+
+    .btn-small {
+      padding: 0.6rem 1.4rem;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      background: var(--surface);
+      color: var(--text);
+      font-size: 0.9rem;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .btn-small:hover {
+      border-color: var(--accent);
+      background: var(--accent-bg);
+    }
+
+    @media (max-width: 600px) {
+      .msg { max-width: 90%; }
+      .input-row { flex-direction: column; }
+      header h1 { font-size: 1.4rem; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>&#9878;&#65039; Debate Agent</h1>
+    <p>Two AIs argue. A judge decides. You watch.</p>
+  </header>
+
+  <!-- Start screen -->
+  <div class="start-screen" id="startScreen">
+    <!-- <div class="examples">
+      <span class="example-chip" data-topic="pineapple belongs on pizza">🍕 Pineapple on pizza</span>
+      <span class="example-chip" data-topic="remote work is better than office work">🏠 Remote vs office</span>
+      <span class="example-chip" data-topic="tabs are better than spaces">⌨️ Tabs vs spaces</span>
+      <span class="example-chip" data-topic="AI will replace most software engineers within 10 years">🤖 AI vs engineers</span>
+      <span class="example-chip" data-topic="you should rent instead of buying a house">🏡 Rent vs buy</span>
+      <span class="example-chip" data-topic="cats are better pets than dogs">🐱 Cats vs dogs</span>
+      <span class="example-chip" data-topic="social media does more harm than good">📱 Social media</span>
+      <span class="example-chip" data-topic="JavaScript is the best programming language">💛 JS is the best</span>
+    </div> -->
+    <div class="input-row">
+      <input type="text" id="topicInput" placeholder="Enter a debate topic..." autocomplete="off">
+      <select id="exchangeSelect">
+        <option value="3">3 exchanges</option>
+        <option value="5" selected>5 exchanges</option>
+        <option value="8">8 exchanges</option>
+      </select>
+      <button class="btn" id="startBtn">Debate!</button>
+    </div>
+  </div>
+
+  <!-- Chat screen -->
+  <div class="chat-screen" id="chatScreen">
+    <div class="topic-bar" id="topicBar"></div>
+    <div class="chat-feed" id="chatFeed"></div>
+    <div class="typing-indicator" id="typing"></div>
+    <div class="bottom-bar">
+      <button class="btn-small" id="newDebateBtn">New debate</button>
+    </div>
+  </div>
+
+  <script>
+    const topicInput = document.getElementById('topicInput');
+    const startBtn = document.getElementById('startBtn');
+    const startScreen = document.getElementById('startScreen');
+    const chatScreen = document.getElementById('chatScreen');
+    const chatFeed = document.getElementById('chatFeed');
+    const typing = document.getElementById('typing');
+    const topicBar = document.getElementById('topicBar');
+    const exchangeSelect = document.getElementById('exchangeSelect');
+    const newDebateBtn = document.getElementById('newDebateBtn');
+
+    document.querySelectorAll('.example-chip').forEach(chip => {
+      chip.addEventListener('click', () => {
+        topicInput.value = chip.dataset.topic;
+        topicInput.focus();
+      });
+    });
+
+    topicInput.addEventListener('keydown', e => {
+      if (e.key === 'Enter') startDebate();
+    });
+
+    startBtn.addEventListener('click', startDebate);
+    newDebateBtn.addEventListener('click', () => {
+      chatScreen.classList.remove('active');
+      startScreen.style.display = '';
+      topicInput.value = '';
+      topicInput.focus();
+    });
+
+    function setTyping(text) {
+      if (text) {
+        typing.innerHTML = `${text} <span class="dot-pulse"><span></span><span></span><span></span></span>`;
+      } else {
+        typing.innerHTML = '';
+      }
+    }
+
+    function addMessage(side, text) {
+      const el = document.createElement('div');
+      const label = side === 'pro' ? '🟢 FOR AGENT' : '🔴 AGAINST AGENT';
+      el.className = `msg ${side}`;
+      el.innerHTML = `<div class="msg-label">${label}</div>${formatText(text)}`;
+      chatFeed.appendChild(el);
+      el.scrollIntoView({ behavior: 'smooth', block: 'end' });
+    }
+
+    function addVerdict(text) {
+      const el = document.createElement('div');
+      el.className = 'verdict-msg';
+      el.innerHTML = `<div class="msg-label">⚖️ Judge</div>${formatText(text)}`;
+      chatFeed.appendChild(el);
+      el.scrollIntoView({ behavior: 'smooth', block: 'end' });
+    }
+
+    function formatText(text) {
+      return text
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+        .replace(/\n/g, '<br>');
+    }
+
+    function startDebate() {
+      const topic = topicInput.value.trim();
+      if (!topic) return;
+
+      const exchanges = parseInt(exchangeSelect.value);
+
+      startBtn.disabled = true;
+      startScreen.style.display = 'none';
+      chatScreen.classList.add('active');
+      chatFeed.innerHTML = '';
+      topicBar.textContent = `"${topic}"`;
+
+      const params = new URLSearchParams({ topic, exchanges: String(exchanges) });
+      const es = new EventSource(`/api/debate?${params}`);
+
+      es.addEventListener('connected', () => {
+        console.log('SSE connected');
+        setTyping('Preparing debate...');
+      });
+
+      es.addEventListener('status', (e) => {
+        const data = JSON.parse(e.data);
+        setTyping(data.text);
+      });
+
+      es.addEventListener('chat', (e) => {
+        const data = JSON.parse(e.data);
+        setTyping('');
+        addMessage(data.side, data.text);
+      });
+
+      es.addEventListener('verdict', (e) => {
+        const data = JSON.parse(e.data);
+        setTyping('');
+        addVerdict(data.text);
+      });
+
+      es.addEventListener('done', () => {
+        setTyping('');
+        es.close();
+        startBtn.disabled = false;
+      });
+
+      es.addEventListener('error', (e) => {
+        console.error('SSE error', e);
+        setTyping('');
+        es.close();
+        startBtn.disabled = false;
+      });
+    }
+
+    // Event handling is now done directly in the EventSource listeners above
+  </script>
+</body>
+</html>
